@@ -38,7 +38,7 @@ def getSkypeMessage(user_data,data):
             for attendee in data['attendees']:
                  if(user['GoogleEmail'] == attendee['email']):
                     invitationText += '<at id="{b1}">{b2}</at> '.format(b1=user['SkypeId'], b2=user['Name'].split()[0])
-    finalMessage = '{b1} Coming Events : {b2}'.format(b1=invitationText, b2=data['summary'])
+    finalMessage = '\n {b1} Coming Events : {b2}'.format(b1=invitationText, b2=data['summary'])
     return finalMessage;
 
 import gspread
