@@ -1,59 +1,126 @@
+const { google } = require('googleapis');
+const fastify = require('fastify');
+const { v4: uuidv4 } = require('uuid');
+const localtunnel = require('localtunnel');
+const schedule = require('node-schedule');
 const express = require("express");
-const app = express();
-const port = process.env.PORT || 3001;
 
-app.get("/", (req, res) => res.type('html').send(html));
+// credentials 
+const credential = require('./credentials.json');
+const secret = credential.secret;
+const clientId = credential.clientId;
+const refreshToken = credential.refreshToken;
+const redirectUri = credential.redirectUri;
+const calendarId = credential.calendarId;
+const oAuth2Client = new google.auth.OAuth2(clientId, secret, redirectUri);
 
-app.listen(port, () => console.log(`Example app listening on port ${port}!`));
+// configuration
+const config = require('config');
+const serverPort = config.get('server.port');
+const skypeUrl = config.get('skype.url');
+
+const server = express();
 
 
-const html = `
-<!DOCTYPE html>
-<html>
-  <head>
-    <title>Hello from Render!</title>
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
-    <script>
-      setTimeout(() => {
-        confetti({
-          particleCount: 100,
-          spread: 70,
-          origin: { y: 0.6 },
-          disableForReducedMotion: true
+oAuth2Client.setCredentials(
+  { refresh_token: refreshToken });
+google.options({ auth: oAuth2Client });
+const calendar = google.calendar({ version: 'v3' });
+
+const startHttpServer = async () => {
+  try {
+    await server.listen(serverPort);
+  } catch (err) {
+    server.log.error(err);
+    process.exit(1);
+  }
+};
+startHttpServer();
+const listenEvents = async () => {
+  // Start the tunnel right after you start your Http server using fastify (see Handling the authorization callback step)
+const tunnel = await localtunnel({
+  port: serverPort
+});
+  try {
+    await calendar.events.watch({
+      resource: {
+        id: uuidv4(),
+        type: 'web_hook',
+        address: `${tunnel.url}/webhook`,
+      },
+      calendarId: calendarId,
+      singleEvents: true,
+    });
+  } catch (error) {
+    console.log(error)
+  }
+}
+listenEvents();
+
+const moment = require('moment');
+const httpRequest = require('request');
+server.post('/webhook', async (request, reply) => {
+  // Authorization details for google API are explained in previous steps.
+  const calendar = google.calendar({ version: 'v3' });
+  // Get the events that changed during the webhook timestamp by using timeMin property.
+  const events = await calendar.events.list({
+    calendarId: calendarId,
+    maxResults: 30,
+    timeMin: new Date().toISOString(),
+    singleEvents: true,
+    orderBy: 'startTime',
+  });
+  schedule.gracefulShutdown();
+  console.log('Event List:', events.data.items.length)
+  events.data.items.forEach((event) => {
+    try {
+      // not calling event without time
+      if (!event.start.dateTime) {
+        return null;
+      }
+      const today = new Date();
+      const startDate = new Date(event.start.dateTime);
+      const minusFiveMinutes = moment(startDate).subtract(5, "minute");
+      const fiveMinutesAgo = minusFiveMinutes.format()
+      if (today < new Date(fiveMinutesAgo)) {
+        let data = {
+          timeZone: event.start.timeZone,
+          startTime: fiveMinutesAgo,
+          summary: event.summary,
+          creator: event.creator.email,
+          description: event.description,
+          attendees: event.attendees ? event.attendees : []
+        };
+        // scheduling process
+        const {hour,minutes,day,month,year} = getScheduleDateTime(data.startTime)
+        const job = schedule.scheduleJob({ hour: hour, minute: minutes, date: day, month: month, year: parseInt(year) }, async () => {
+          httpRequest.post(`${skypeUrl}/send-message`,{ json: { email: data.creator, summary: data.summary, attendees: data.attendees } }, function (error, response, body) {
+            if (!error && response.statusCode == 200) {
+              console.log(body) // Print the google web page.
+            }
+          })
         });
-      }, 500);
-    </script>
-    <style>
-      @import url("https://p.typekit.net/p.css?s=1&k=vnd5zic&ht=tk&f=39475.39476.39477.39478.39479.39480.39481.39482&a=18673890&app=typekit&e=css");
-      @font-face {
-        font-family: "neo-sans";
-        src: url("https://use.typekit.net/af/00ac0a/00000000000000003b9b2033/27/l?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n7&v=3") format("woff2"), url("https://use.typekit.net/af/00ac0a/00000000000000003b9b2033/27/d?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n7&v=3") format("woff"), url("https://use.typekit.net/af/00ac0a/00000000000000003b9b2033/27/a?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n7&v=3") format("opentype");
-        font-style: normal;
-        font-weight: 700;
+      } else {
+        console.log("Wrong Date");
+        return false;
       }
-      html {
-        font-family: neo-sans;
-        font-weight: 700;
-        font-size: calc(62rem / 16);
-      }
-      body {
-        background: white;
-      }
-      section {
-        border-radius: 1em;
-        padding: 1em;
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        margin-right: -50%;
-        transform: translate(-50%, -50%);
-      }
-    </style>
-  </head>
-  <body>
-    <section>
-      Hello from Render!
-    </section>
-  </body>
-</html>
-`
+    } catch (e) {
+      console.log(e)
+    }
+  })
+  return reply.status(200).send('Webhook received');
+});
+const getScheduleDateTime = (startTime) => {
+  const filterTime = new Date(startTime).toTimeString();
+  const day = startTime?.split("-")[2]?.split("T")[0];
+  let month = parseInt(startTime.split("-")[1]);
+  const year = startTime.split("-")[0];
+  if (month == 12) {
+    month = 0;
+  }
+  else {
+    month = month - 1
+  }
+  const [hour, minutes, second] = filterTime.split(":");
+  return {hour,minutes,day,month,year}
+}
