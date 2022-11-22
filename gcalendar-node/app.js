@@ -59,57 +59,57 @@ listenEvents();
 
 const moment = require('moment');
 const httpRequest = require('request');
-server.post('/webhook', async (request, reply) => {
-  // Authorization details for google API are explained in previous steps.
-  const calendar = google.calendar({ version: 'v3' });
-  // Get the events that changed during the webhook timestamp by using timeMin property.
-  const events = await calendar.events.list({
-    calendarId: calendarId,
-    maxResults: 30,
-    timeMin: new Date().toISOString(),
-    singleEvents: true,
-    orderBy: 'startTime',
-  });
-  schedule.gracefulShutdown();
-  console.log('Event List:', events.data.items.length)
-  events.data.items.forEach((event) => {
-    try {
-      // not calling event without time
-      if (!event.start.dateTime) {
-        return null;
-      }
-      const today = new Date();
-      const startDate = new Date(event.start.dateTime);
-      const minusFiveMinutes = moment(startDate).subtract(5, "minute");
-      const fiveMinutesAgo = minusFiveMinutes.format()
-      if (today < new Date(fiveMinutesAgo)) {
-        let data = {
-          timeZone: event.start.timeZone,
-          startTime: fiveMinutesAgo,
-          summary: event.summary,
-          creator: event.creator.email,
-          description: event.description,
-          attendees: event.attendees ? event.attendees : []
-        };
-        // scheduling process
-        const {hour,minutes,day,month,year} = getScheduleDateTime(data.startTime)
-        const job = schedule.scheduleJob({ hour: hour, minute: minutes, date: day, month: month, year: parseInt(year) }, async () => {
-          httpRequest.post(`${skypeUrl}/send-message`,{ json: { email: data.creator, summary: data.summary, attendees: data.attendees } }, function (error, response, body) {
-            if (!error && response.statusCode == 200) {
-              console.log(body) // Print the google web page.
-            }
-          })
-        });
-      } else {
-        console.log("Wrong Date");
-        return false;
-      }
-    } catch (e) {
-      console.log(e)
-    }
-  })
-  return reply.status(200).send('Webhook received');
-});
+// server.post('/webhook', async (request, reply) => {
+//   // Authorization details for google API are explained in previous steps.
+//   const calendar = google.calendar({ version: 'v3' });
+//   // Get the events that changed during the webhook timestamp by using timeMin property.
+//   const events = await calendar.events.list({
+//     calendarId: calendarId,
+//     maxResults: 30,
+//     timeMin: new Date().toISOString(),
+//     singleEvents: true,
+//     orderBy: 'startTime',
+//   });
+//   schedule.gracefulShutdown();
+//   console.log('Event List:', events.data.items.length)
+//   events.data.items.forEach((event) => {
+//     try {
+//       // not calling event without time
+//       if (!event.start.dateTime) {
+//         return null;
+//       }
+//       const today = new Date();
+//       const startDate = new Date(event.start.dateTime);
+//       const minusFiveMinutes = moment(startDate).subtract(5, "minute");
+//       const fiveMinutesAgo = minusFiveMinutes.format()
+//       if (today < new Date(fiveMinutesAgo)) {
+//         let data = {
+//           timeZone: event.start.timeZone,
+//           startTime: fiveMinutesAgo,
+//           summary: event.summary,
+//           creator: event.creator.email,
+//           description: event.description,
+//           attendees: event.attendees ? event.attendees : []
+//         };
+//         // scheduling process
+//         const {hour,minutes,day,month,year} = getScheduleDateTime(data.startTime)
+//         const job = schedule.scheduleJob({ hour: hour, minute: minutes, date: day, month: month, year: parseInt(year) }, async () => {
+//           httpRequest.post(`${skypeUrl}/send-message`,{ json: { email: data.creator, summary: data.summary, attendees: data.attendees } }, function (error, response, body) {
+//             if (!error && response.statusCode == 200) {
+//               console.log(body) // Print the google web page.
+//             }
+//           })
+//         });
+//       } else {
+//         console.log("Wrong Date");
+//         return false;
+//       }
+//     } catch (e) {
+//       console.log(e)
+//     }
+//   })
+//   return reply.status(200).send('Webhook received');
+// });
 const getScheduleDateTime = (startTime) => {
   const filterTime = new Date(startTime).toTimeString();
   const day = startTime?.split("-")[2]?.split("T")[0];
