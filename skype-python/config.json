@@ -1,0 +1,10 @@
+{
+    "skype_settings":{
+        "SKYPE_USERNAME":"scm.bott.tester@gmail.com",
+        "SKYPE_PASSWORD":"seattleM1",
+        "SKYPE_GROUP_ID":"19:1e049949a0bb46698be394bc5fb22237@thread.skype"
+    },
+    "google_settings":{
+        "SHEET_URL":"https://docs.google.com/spreadsheets/d/1shc8PNcEBYpEbdqdsR30WcLeF9s15czBNLTPCJ3KaG8/edit#gid=0"
+    }
+}
