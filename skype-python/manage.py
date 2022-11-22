@@ -9,11 +9,13 @@ app = Flask(__name__)
 @app.route("/send-message", methods=['POST'])
 def sendMessage():
     user_data = getGoogleSheetUser();
+    print(user_data)
     data = request.json
     # connect Skype
     ch = connectSkype()
     # get skype message
     message = getSkypeMessage(user_data,data)
+
     # check mentioned user exist
     if "<at id=" in message: 
       #send skype message
@@ -43,7 +45,7 @@ import pandas as pd
 from gsheets import Sheets
 def getGoogleSheetUser():
     google_settings = config_data['google_settings']
-    sheets = Sheets.from_files('client_secret.json', '~/storage.json')
+    sheets = Sheets.from_files('client_secrets.json', '~/storage.json')
     url = google_settings['SHEET_URL']
     s = sheets.get(url)
     excel_data = pd.DataFrame(s.sheets[0].values()).to_dict('split')['data']
