@@ -41,23 +41,15 @@ def getSkypeMessage(user_data,data):
     finalMessage = '{b1} Coming Events : {b2}'.format(b1=invitationText, b2=data['summary'])
     return finalMessage;
 
-import pandas as pd
-from gsheets import Sheets
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
 def getGoogleSheetUser():
     google_settings = config_data['google_settings']
-    sheets = Sheets.from_files('client_secrets.json', '~/storage.json')
+    gc = gspread.service_account(filename='mycredentials.json')
     url = google_settings['SHEET_URL']
-    s = sheets.get(url)
-    excel_data = pd.DataFrame(s.sheets[0].values()).to_dict('split')['data']
-    label = excel_data[0]
-    del excel_data[0]
-    userDict = dict()
-    userDics = []
-    for data in excel_data:
-        for index, w in enumerate(data):
-            userDict[label[index]] = w
-        userDics.append(userDict.copy())
-    return userDics;
+    gsheet = gc.open_by_url(url)
+    udata = gsheet.sheet1.get_all_records()
+    return udata;
 
 if __name__ == "__main__":
     app.run(debug=True)
