@@ -28,12 +28,7 @@ google.options({ auth: oAuth2Client });
 const calendar = google.calendar({ version: 'v3' });
 
 const startHttpServer = async () => {
-  try {
     await server.listen(serverPort);
-  } catch (err) {
-    server.log.error(err);
-    process.exit(1);
-  }
 };
 startHttpServer();
 const listenEvents = async () => {
