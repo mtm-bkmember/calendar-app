@@ -94,7 +94,9 @@ server.post('/webhook', async (request, reply) => {
         };
         // scheduling process
         const {hour,minutes,day,month,year} = getScheduleDateTime(data.startTime)
+        console.log(`Job is created for ${data.creator} with title: ${data.summary}　at hour:${hour} minutes:${minutes} day:${day}`)
         const job = schedule.scheduleJob({ hour: hour, minute: minutes, date: day, month: month, year: parseInt(year) }, async () => {
+          console.log(`Job is calling for ${data.creator} with title: ${data.summary}`)
           httpRequest.post(`${skypeUrl}/send-message`,{ json: { email: data.creator, summary: data.summary, attendees: data.attendees } }, function (error, response, body) {
             if (!error && response.statusCode == 200) {
               console.log(body) // Print the google web page.
@@ -109,7 +111,6 @@ server.post('/webhook', async (request, reply) => {
       console.log(e)
     }
   })
-  console.log('Sending')
   return reply.status(200).send('Webhook received');
 });
 const getScheduleDateTime = (startTime) => {
