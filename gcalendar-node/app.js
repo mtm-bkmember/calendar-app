@@ -90,6 +90,7 @@ server.post('/webhook', async (request, reply) => {
         };
         // scheduling process
         const {hour,minutes,day,month,year} = getScheduleDateTime(data.startTime, data.timeZone)
+        console.log(hour, minutes)
         console.log(`Job is created for ${data.creator} with title: ${data.summary}　at hour:${hour} minutes:${minutes} day:${day}`)
         const job = schedule.scheduleJob({ hour: hour, minute: minutes, date: day, month: month, year: parseInt(year), tz:data.timeZone }, async () => {
           console.log(`Job is calling for ${data.creator} with title: ${data.summary}`)
