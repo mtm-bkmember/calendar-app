@@ -110,6 +110,9 @@ server.post('/webhook', async (request, reply) => {
   })
   return reply.status(200).send('Webhook received');
 });
+server.post('/wake', async (request, reply) => {
+  console.log('wake')
+});
 const getScheduleDateTime = (startTime, timezone) => {
   console.log("0 :", startTime)
   const day = startTime?.split("-")[2]?.split("T")[0];
