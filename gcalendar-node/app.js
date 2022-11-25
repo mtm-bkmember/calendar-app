@@ -89,9 +89,9 @@ server.post('/webhook', async (request, reply) => {
           attendees: event.attendees ? event.attendees : []
         };
         // scheduling process
-        const {hour,minutes,day,month,year} = getScheduleDateTime(data.startTime)
+        const {hour,minutes,day,month,year} = getScheduleDateTime(data.startTime, data.timeZone)
         console.log(`Job is created for ${data.creator} with title: ${data.summary}　at hour:${hour} minutes:${minutes} day:${day}`)
-        const job = schedule.scheduleJob({ hour: hour, minute: minutes, date: day, month: month, year: parseInt(year) }, async () => {
+        const job = schedule.scheduleJob({ hour: hour, minute: minutes, date: day, month: month, year: parseInt(year), tz:data.timeZone }, async () => {
           console.log(`Job is calling for ${data.creator} with title: ${data.summary}`)
           httpRequest.post(`${skypeUrl}/send-message`,{ json: { email: data.creator, summary: data.summary, attendees: data.attendees } }, function (error, response, body) {
             if (!error && response.statusCode == 200) {
@@ -109,17 +109,17 @@ server.post('/webhook', async (request, reply) => {
   })
   return reply.status(200).send('Webhook received');
 });
-const getScheduleDateTime = (startTime) => {
-  const filterTime = new Date(startTime).toTimeString();
+const getScheduleDateTime = (startTime, timezone) => {
   const day = startTime?.split("-")[2]?.split("T")[0];
   let month = parseInt(startTime.split("-")[1]);
   const year = startTime.split("-")[0];
+  const time =startTime?.split("T")[1].split("+")[0]
+  const [hour, minutes, second] = time.split(":")
   if (month == 12) {
     month = 0;
   }
   else {
     month = month - 1
   }
-  const [hour, minutes, second] = filterTime.split(":");
   return {hour,minutes,day,month,year}
 }
