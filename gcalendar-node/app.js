@@ -70,6 +70,7 @@ server.post('/webhook', async (request, reply) => {
   console.log('Event List:', events.data.items.length)
   events.data.items.forEach((event) => {
     try {
+      console.log(event.start.dateTime)
       // not calling event without time
       if (!event.start.dateTime) {
         return null;
