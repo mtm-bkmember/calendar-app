@@ -92,7 +92,7 @@ server.post('/webhook', async (request, reply) => {
         const {hour,minutes,day,month,year} = getScheduleDateTime(data.startTime, data.timeZone)
         console.log(data.timeZone)
         console.log(`Job is created for ${data.creator} with title: ${data.summary}　at hour:${hour} minutes:${minutes} day:${day}`)
-        const job = schedule.scheduleJob({ hour: hour, minute: minutes, date: day, month: month, year: parseInt(year), tz:data.timeZone }, async () => {
+        const job = schedule.scheduleJob({ hour: hour, minute: minutes, date: day, month: month, year: parseInt(year) }, async () => {
           console.log(`Job is calling for ${data.creator} with title: ${data.summary}`)
           httpRequest.post(`${skypeUrl}/send-message`,{ json: { email: data.creator, summary: data.summary, attendees: data.attendees } }, function (error, response, body) {
             if (!error && response.statusCode == 200) {
