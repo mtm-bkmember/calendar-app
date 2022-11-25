@@ -53,7 +53,7 @@ console.log(tunnel.url)
 }
 listenEvents();
 
-const moment = require('moment');
+const moment = require('moment-timezone');
 const httpRequest = require('request');
 server.post('/webhook', async (request, reply) => {
   // Authorization details for google API are explained in previous steps.
@@ -77,8 +77,7 @@ server.post('/webhook', async (request, reply) => {
       }
       const today = new Date();
       const startDate = new Date(event.start.dateTime);
-      console.log('Start Date :',startDate)
-      const minusFiveMinutes = moment(startDate).subtract(5, "minute");
+      const minusFiveMinutes = moment(startDate).tz("Asia/Yangon").subtract(5, "minute");
       const fiveMinutesAgo = minusFiveMinutes.format()
       if (today < new Date(fiveMinutesAgo)) {
         let data = {
@@ -91,7 +90,7 @@ server.post('/webhook', async (request, reply) => {
         };
         // scheduling process
         const {hour,minutes,day,month,year} = getScheduleDateTime(data.startTime, data.timeZone)
-        console.log(hour, minutes)
+        console.log(data.timeZone)
         console.log(`Job is created for ${data.creator} with title: ${data.summary}　at hour:${hour} minutes:${minutes} day:${day}`)
         const job = schedule.scheduleJob({ hour: hour, minute: minutes, date: day, month: month, year: parseInt(year), tz:data.timeZone }, async () => {
           console.log(`Job is calling for ${data.creator} with title: ${data.summary}`)
