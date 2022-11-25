@@ -77,6 +77,7 @@ server.post('/webhook', async (request, reply) => {
       }
       const today = new Date();
       const startDate = new Date(event.start.dateTime);
+      console.log('Start Date :',startDate)
       const minusFiveMinutes = moment(startDate).subtract(5, "minute");
       const fiveMinutesAgo = minusFiveMinutes.format()
       if (today < new Date(fiveMinutesAgo)) {
@@ -111,10 +112,12 @@ server.post('/webhook', async (request, reply) => {
   return reply.status(200).send('Webhook received');
 });
 const getScheduleDateTime = (startTime, timezone) => {
+  console.log("0 :", startTime)
   const day = startTime?.split("-")[2]?.split("T")[0];
   let month = parseInt(startTime.split("-")[1]);
   const year = startTime.split("-")[0];
   const time =startTime?.split("T")[1].split("+")[0]
+  console.log("1 :", time)
   const [hour, minutes, second] = time.split(":")
   if (month == 12) {
     month = 0;
@@ -122,5 +125,6 @@ const getScheduleDateTime = (startTime, timezone) => {
   else {
     month = month - 1
   }
+  console.log("2 :", hour, minutes,second)
   return {hour,minutes,day,month,year}
 }
